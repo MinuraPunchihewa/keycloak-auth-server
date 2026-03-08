@@ -1,0 +1,39 @@
+### Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+### Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+### Packaging / builds
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+### Logs
+*.log
+
+### Secrets / local config
+.env
+.env.*
+
+### OS
+.DS_Store
+
+### IDEs
+.vscode/
+.idea/
+
+### Type checker / language servers
+.python-version

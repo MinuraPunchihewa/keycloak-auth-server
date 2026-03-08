@@ -15,6 +15,11 @@ class KeycloakSettings(Settings):
     url: str = Field(default="http://localhost:8080")
     realm: str = Field(default="dev")
     client_id: str = Field(default="fastapi-server")
+    client_secret: str | None = Field(default=None)
+
+    redirect_uri: str = Field(default="http://localhost:8000/auth/callback")
+    post_logout_redirect_uri: str = Field(default="http://localhost:8000/")
+    scope: str = Field(default="openid profile email")
 
     @computed_field
     @property
@@ -28,9 +33,21 @@ class KeycloakSettings(Settings):
 
     @computed_field
     @property
+    def end_session_url(self) -> str:
+        return f"{self.url}/realms/{self.realm}/protocol/openid-connect/logout"
+
+    @computed_field
+    @property
     def jwks_url(self) -> str:
         return f"{self.url}/realms/{self.realm}/protocol/openid-connect/certs"
+
+    @computed_field
+    @property
+    def issuer(self) -> str:
+        return f"{self.url}/realms/{self.realm}"
 
 
 class AppSettings(Settings):
     keycloak: KeycloakSettings = Field(default_factory=KeycloakSettings)
+    session_secret_key: str = Field(default="dev-only-change-me")
+    cookie_secure: bool = Field(default=False)

@@ -1,0 +1,34 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    command: ["start-dev", "--http-port=8080", "--import-realm"]
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak/import:/opt/keycloak/data/import:ro
+      - keycloak_data:/opt/keycloak/data
+
+  app:
+    build: .
+    environment:
+      # Keycloak is reachable by service name on the compose network.
+      KEYCLOAK__URL: http://keycloak:8080
+      # But the browser must use localhost to reach Keycloak from your machine.
+      KEYCLOAK__PUBLIC_URL: http://localhost:8080
+      KEYCLOAK__REALM: ${KEYCLOAK__REALM:-dev}
+      KEYCLOAK__CLIENT_ID: ${KEYCLOAK__CLIENT_ID:-fastapi-server}
+      KEYCLOAK__CLIENT_SECRET: ${KEYCLOAK__CLIENT_SECRET:-}
+
+      # Cookie should be secure only when you serve over HTTPS.
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY:-dev-only-change-me}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - keycloak
+
+volumes:
+  keycloak_data:

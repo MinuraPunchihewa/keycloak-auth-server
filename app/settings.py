@@ -12,7 +12,10 @@ class Settings(BaseSettings):
 
 
 class KeycloakSettings(Settings):
+    # Internal URL used by the FastAPI service (e.g. Docker DNS name).
     url: str = Field(default="http://localhost:8080")
+    # Public URL used in browser redirects (must be reachable from the user agent).
+    public_url: str | None = Field(default=None)
     realm: str = Field(default="dev")
     client_id: str = Field(default="fastapi-server")
     client_secret: str | None = Field(default=None)
@@ -24,7 +27,8 @@ class KeycloakSettings(Settings):
     @computed_field
     @property
     def auth_url(self) -> str:
-        return f"{self.url}/realms/{self.realm}/protocol/openid-connect/auth"
+        base = self.public_url or self.url
+        return f"{base}/realms/{self.realm}/protocol/openid-connect/auth"
 
     @computed_field
     @property
@@ -34,7 +38,8 @@ class KeycloakSettings(Settings):
     @computed_field
     @property
     def end_session_url(self) -> str:
-        return f"{self.url}/realms/{self.realm}/protocol/openid-connect/logout"
+        base = self.public_url or self.url
+        return f"{base}/realms/{self.realm}/protocol/openid-connect/logout"
 
     @computed_field
     @property
@@ -44,7 +49,8 @@ class KeycloakSettings(Settings):
     @computed_field
     @property
     def issuer(self) -> str:
-        return f"{self.url}/realms/{self.realm}"
+        base = self.public_url or self.url
+        return f"{base}/realms/{self.realm}"
 
 
 class AppSettings(Settings):

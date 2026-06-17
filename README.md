@@ -202,6 +202,12 @@ uvicorn app.server:app --reload --host 0.0.0.0 --port 8000
 | GET    | `/logout`        | Clear session and log out via Keycloak           |
 | GET    | `/protected`     | Requires authentication (cookie or Bearer token) |
 
+## Saving Resources
+
+When saving resources, they are associated with certain users and typically this would be done with the use of an ID. Here, since Keycloak owns identity, we can use the `sub` (subject) from the JWT access token.
+
+This ID is displayed along with the username when a user navigates to the `/protected` endpoint. 
+
 ## Configuration
 
 Settings are loaded from environment variables and an optional `.env` file. Nested settings use a double underscore (`__`) delimiter.

@@ -31,7 +31,7 @@ async def read_root():
 
 @app.get("/protected")
 async def protected(user: User = Depends(get_current_user)):
-    return {"message": f"Hello, {user.username}!"}
+    return {"message": f"Hello, {user.username}! Your ID is {user.id}."}
 
 
 @app.get("/login")

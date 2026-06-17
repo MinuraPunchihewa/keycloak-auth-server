@@ -22,6 +22,7 @@ keycloak_oauth2_scheme = OAuth2AuthorizationCodeBearer(
 
 
 class User(BaseModel):
+    id: str | None = None
     username: str
     roles: list[str]
 
@@ -98,11 +99,15 @@ def _extract_roles(payload: dict[str, Any]) -> list[str]:
 
 
 def _extract_username(payload: dict[str, Any]) -> str:
-    for key in ("preferred_username", "email", "sub"):
+    for key in ("preferred_username", "email"):
         val = payload.get(key)
         if isinstance(val, str) and val:
             return val
     return "unknown"
+
+
+def _extract_user_id(payload: dict[str, Any]) -> str:
+    return payload.get("sub")
 
 
 async def verify_token(token: str | None) -> User:
@@ -137,4 +142,4 @@ async def verify_token(token: str | None) -> User:
         options={"verify_aud": False},
     )
 
-    return User(username=_extract_username(payload), roles=_extract_roles(payload))
+    return User(id=_extract_user_id(payload), username=_extract_username(payload), roles=_extract_roles(payload))

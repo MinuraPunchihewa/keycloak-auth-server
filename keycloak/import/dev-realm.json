@@ -2,7 +2,7 @@
   "realm": "dev",
   "enabled": true,
   "displayName": "Dev Realm",
-  "registrationAllowed": false,
+  "registrationAllowed": true,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": true,

@@ -2,6 +2,63 @@
 
 A FastAPI application that demonstrates OpenID Connect authentication with [Keycloak](https://www.keycloak.org/). It implements the authorization code flow with PKCE, stores tokens in a server-side session, and protects routes by validating JWT access tokens against Keycloak's JWKS endpoint.
 
+## How OAuth works
+
+[OAuth 2.0](https://oauth.net/2/) is a standard for **delegated authorization**: an app can access resources on a user's behalf without handling their password. [OpenID Connect (OIDC)](https://openid.net/connect/) builds on OAuth and adds identity — who the user is — via an ID token and standard claims in the access token.
+
+This project uses the **authorization code flow with PKCE**, which is the recommended approach for web apps. Keycloak acts as the **authorization server**; the FastAPI app is the **client**; protected API routes are the **resource server**.
+
+### Roles
+
+| Role | In this project |
+|------|-----------------|
+| **Resource owner** | The person signing in (e.g. `alice`) |
+| **Client** | The FastAPI app (`fastapi-server`) |
+| **Authorization server** | Keycloak (issues tokens after login) |
+| **Resource server** | The FastAPI app again (validates tokens on `/protected`) |
+
+### Login flow (step by step)
+
+1. **User starts login** — The browser visits `/login`. The app creates a session, generates a random `state` value and a PKCE `code_verifier`, and stores them server-side.
+
+2. **Redirect to Keycloak** — The app redirects the browser to Keycloak's authorization endpoint with parameters such as `client_id`, `redirect_uri`, `scope`, `state`, and `code_challenge` (a hash of the verifier). The user never sees the PKCE verifier; only the challenge is sent in the URL.
+
+3. **User authenticates** — Keycloak shows a login page. The user enters credentials (e.g. `alice` / `alice`). Keycloak validates them; the app never receives the password.
+
+4. **Authorization grant** — If login succeeds, Keycloak redirects the browser back to `/auth/callback` with a short-lived **authorization code** and the same `state` value.
+
+5. **Verify state** — The app compares the returned `state` with the value stored in the session. This prevents CSRF attacks where a malicious site tries to complete a login with someone else's code.
+
+6. **Exchange code for tokens** — The app sends a server-to-server POST to Keycloak's token endpoint with the authorization code, `client_id`, `redirect_uri`, and the original `code_verifier`. Keycloak checks that the verifier matches the earlier `code_challenge`, then returns tokens.
+
+7. **Store tokens** — The app saves the **access token**, **refresh token**, and **ID token** in the server-side session and sets a signed `session` cookie on the browser. The tokens themselves stay on the server; the cookie is only an opaque session reference.
+
+8. **Redirect home** — The browser is sent to `/`. The user is now logged in.
+
+### Accessing a protected resource (step by step)
+
+1. **Request a protected route** — The browser requests `/protected` and sends the `session` cookie automatically.
+
+2. **Resolve the session** — The app reads the cookie, looks up the stored access token, and validates it.
+
+3. **Validate the JWT** — The app fetches Keycloak's public keys (JWKS), verifies the access token's signature, issuer, and expiry, and reads claims such as `preferred_username` and roles.
+
+4. **Return the response** — If the token is valid, the route handler runs and returns data for that user. If not, the app responds with `401 Unauthorized`.
+
+Alternatively, API clients can send the access token directly in an `Authorization: Bearer <token>` header instead of using the session cookie.
+
+### Logout flow (step by step)
+
+1. **User visits `/logout`** — The app deletes the local session and clears the `session` cookie.
+
+2. **Redirect to Keycloak** — The browser is redirected to Keycloak's end-session endpoint, optionally with an `id_token_hint`, so Keycloak can end the SSO session too.
+
+3. **Return to the app** — Keycloak redirects back to the configured post-logout URL (`/`). The user must log in again to access protected routes.
+
+### Why PKCE?
+
+PKCE (*Proof Key for Code Exchange*) protects public clients that cannot keep a client secret in the browser. The app generates a secret verifier, sends only a hash to Keycloak, and proves possession of the verifier when exchanging the code. Even if an attacker intercepts the authorization code, they cannot redeem it without the verifier stored in the app's session.
+
 ## What it does
 
 - **Login via Keycloak** — `/login` redirects the browser to Keycloak, then `/auth/callback` exchanges the authorization code for tokens.

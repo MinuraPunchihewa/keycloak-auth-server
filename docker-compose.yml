@@ -1,4 +1,10 @@
 services:
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     command: ["start-dev", "--http-port=8080", "--import-realm"]
@@ -10,6 +16,8 @@ services:
     volumes:
       - ./keycloak/import:/opt/keycloak/data/import:ro
       - keycloak_data:/opt/keycloak/data
+    depends_on:
+      - mailpit
 
   app:
     build: .

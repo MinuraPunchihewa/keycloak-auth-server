@@ -3,11 +3,21 @@
   "enabled": true,
   "displayName": "Dev Realm",
   "registrationAllowed": true,
+  "verifyEmail": true,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": true,
   "editUsernameAllowed": false,
   "sslRequired": "external",
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "noreply@localhost",
+    "fromDisplayName": "Dev Realm",
+    "ssl": "false",
+    "starttls": "false",
+    "auth": "false"
+  },
   "clients": [
     {
       "clientId": "fastapi-server",

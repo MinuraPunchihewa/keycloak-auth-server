@@ -86,9 +86,10 @@ This is the recommended way to run the stack.
 docker compose up --build
 ```
 
-2. Wait for both services to be ready:
+2. Wait for the services to be ready:
    - **App:** http://localhost:8000
    - **Keycloak:** http://localhost:8080
+   - **Mailpit** (local email inbox): http://localhost:8025
 
 3. Try the flow:
    - Open http://localhost:8000/login — you will be redirected to Keycloak.
@@ -148,6 +149,26 @@ To add or change users without editing the JSON file, use the Keycloak admin con
 - URL: http://localhost:8080/admin
 - Username: `admin`
 - Password: `admin`
+
+### Email verification (Mailpit)
+
+The `dev` realm is configured with `verifyEmail: true` and SMTP pointing at [Mailpit](https://mailpit.axllent.org/), a local mail catcher. When a user registers or needs to verify their email, Keycloak sends the message to Mailpit instead of the real internet.
+
+**How to verify a new user:**
+
+1. Register at http://localhost:8000/login → **Register**, or use Keycloak's registration page.
+2. Open the Mailpit inbox at http://localhost:8025.
+3. Open the **Verify email** message and click the link inside.
+4. In the Keycloak admin console, the user's **Email verified** flag should now be **On**.
+
+**Existing users** who registered before verification was enabled will not receive a retroactive email. In the admin console, open the user → **Action** → **Send verification email**, or toggle **Email verified** manually for local testing.
+
+If you change `dev-realm.json` (for example SMTP or `verifyEmail`) after Keycloak has already imported the realm, reset the volume so settings are re-imported:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
 
 ## Run locally without Docker
 
@@ -212,6 +233,6 @@ app/
     deps.py          # FastAPI dependencies (get_current_user, require_role)
 keycloak/import/
   dev-realm.json     # Pre-configured realm, client, and demo user
-docker-compose.yml   # Keycloak + app services
+docker-compose.yml   # Keycloak, Mailpit, and app services
 Dockerfile           # FastAPI app image
 ```

@@ -69,6 +69,8 @@ PKCE (*Proof Key for Code Exchange*) protects public clients that cannot keep a 
 
 The `dev` realm, OAuth client, and a demo user are imported automatically when Keycloak starts via `keycloak/import/dev-realm.json`.
 
+Self registration has also been enabled, therefore, it is possible to click the Register button on the login page and create new users.
+
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) and Docker Compose, **or**

@@ -18,6 +18,24 @@
     "starttls": "false",
     "auth": "false"
   },
+  "identityProviders": [
+    {
+      "alias": "google",
+      "displayName": "Google",
+      "providerId": "google",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "config": {
+        "clientId": "YOUR_GOOGLE_CLIENT_ID",
+        "clientSecret": "YOUR_GOOGLE_CLIENT_SECRET",
+        "useJwksUrl": "true",
+        "defaultScope": "openid profile email"
+      }
+    }
+  ],
   "clients": [
     {
       "clientId": "fastapi-server",

@@ -170,6 +170,31 @@ docker compose down -v
 docker compose up --build
 ```
 
+### Google sign-in (optional)
+
+Google login is configured in **Keycloak**, not in the FastAPI app. It can run **side by side** with username/password — users pick either option on the Keycloak login page when they visit `/login`. The existing OAuth flow (`/login` → `/auth/callback`) does not need to change.
+
+**Option A — edit the realm import file**
+
+`keycloak/import/dev-realm.json` includes a Google identity provider under `identityProviders` with placeholders. Replace `YOUR_GOOGLE_CLIENT_ID` and `YOUR_GOOGLE_CLIENT_SECRET` with credentials from the [Google Cloud Console](https://console.cloud.google.com/), then re-import the realm:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+**Option B — use the Keycloak admin console**
+
+1. Open http://localhost:8080/admin → **dev** realm → **Identity providers** → **Google**.
+2. Enter your Google **Client ID** and **Client secret**.
+3. Save.
+
+**Google Cloud redirect URI** (required for either option — points to Keycloak, not the FastAPI app):
+
+```
+http://localhost:8080/realms/dev/broker/google/endpoint
+```
+
 ## Run locally without Docker
 
 You need Keycloak running separately (for example on port 8080) with the `dev` realm imported. Then run the FastAPI app on your machine.
@@ -238,7 +263,7 @@ app/
     session.py       # In-memory session store and signed cookies
     deps.py          # FastAPI dependencies (get_current_user, require_role)
 keycloak/import/
-  dev-realm.json     # Pre-configured realm, client, and demo user
+  dev-realm.json     # Realm, client, demo user, Mailpit SMTP, Google IdP (optional)
 docker-compose.yml   # Keycloak, Mailpit, and app services
 Dockerfile           # FastAPI app image
 ```

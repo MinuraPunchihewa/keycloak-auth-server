@@ -21,6 +21,10 @@ services:
 
   app:
     build: .
+    # Let the app reach Keycloak at localhost:8080 from inside the container so
+    # server-side token calls match the issuer in browser-issued tokens.
+    extra_hosts:
+      - "localhost:host-gateway"
     environment:
       # Keycloak is reachable by service name on the compose network.
       KEYCLOAK__URL: http://keycloak:8080
@@ -29,6 +33,8 @@ services:
       KEYCLOAK__REALM: ${KEYCLOAK__REALM:-dev}
       KEYCLOAK__CLIENT_ID: ${KEYCLOAK__CLIENT_ID:-fastapi-server}
       KEYCLOAK__CLIENT_SECRET: ${KEYCLOAK__CLIENT_SECRET:-}
+      KEYCLOAK__ADMIN_CLIENT_ID: ${KEYCLOAK__ADMIN_CLIENT_ID:-fastapi-admin}
+      KEYCLOAK__ADMIN_CLIENT_SECRET: ${KEYCLOAK__ADMIN_CLIENT_SECRET:-dev-admin-secret-change-me}
 
       # Cookie should be secure only when you serve over HTTPS.
       COOKIE_SECURE: ${COOKIE_SECURE:-false}

@@ -225,8 +225,8 @@ Settings are loaded from environment variables and an optional `.env` file. Nest
 
 | Variable                         | Default                          | Description |
 |----------------------------------|----------------------------------|-------------|
-| `KEYCLOAK__URL`                  | `http://localhost:8080`          | Keycloak URL used by the app for token exchange and JWKS |
-| `KEYCLOAK__PUBLIC_URL`           | (same as `KEYCLOAK__URL`)        | Keycloak URL used in browser redirects |
+| `KEYCLOAK__URL`                  | `http://localhost:8080`          | Keycloak URL for Admin API and JWKS (internal Docker hostname in Compose) |
+| `KEYCLOAK__PUBLIC_URL`           | (same as `KEYCLOAK__URL`)        | Keycloak URL for browser redirects and user token grants (code exchange, refresh) |
 | `KEYCLOAK__REALM`                | `dev`                            | Keycloak realm name |
 | `KEYCLOAK__CLIENT_ID`            | `fastapi-server`                 | OAuth client ID |
 | `KEYCLOAK__CLIENT_SECRET`        | (empty)                          | Client secret (not required for the public client) |
@@ -238,7 +238,7 @@ Settings are loaded from environment variables and an optional `.env` file. Nest
 | `SESSION_SECRET_KEY`             | `dev-only-change-me`             | Secret for signing session cookies |
 | `COOKIE_SECURE`                  | `false`                          | Set to `true` when serving over HTTPS |
 
-When running with Docker Compose, `KEYCLOAK__URL` is set to `http://keycloak:8080` (internal network) and `KEYCLOAK__PUBLIC_URL` to `http://localhost:8080` (browser-accessible).
+When running with Docker Compose, `KEYCLOAK__URL` is set to `http://keycloak:8080` (internal network) and `KEYCLOAK__PUBLIC_URL` to `http://localhost:8080` (browser-accessible). User token calls (authorization code exchange and refresh) use `PUBLIC_URL` so the request URL matches the token issuer. The app service maps `localhost` to the host via `extra_hosts` so those calls work from inside the container.
 
 ## Project structure
 

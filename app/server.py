@@ -21,8 +21,9 @@ from app.auth.keycloak import (
     pkce_challenge,
     verify_token,
 )
-from app.auth.keycloak_admin import assign_persona_role, refresh_access_token
+from app.auth.keycloak_admin import assign_persona_role
 from app.auth.onboarding import has_persona, is_valid_persona
+from app.auth.session_tokens import LoginRequired, get_user_from_session, refresh_session_tokens
 from app.auth.session import (
     delete_session,
     get_session,
@@ -45,20 +46,29 @@ async def onboarding_required_handler(request: Request, exc: OnboardingRequired)
     return RedirectResponse(url="/onboarding", status_code=302)
 
 
+@app.exception_handler(LoginRequired)
+async def login_required_handler(request: Request, exc: LoginRequired) -> RedirectResponse:
+    signed = request.cookies.get("session")
+    if signed:
+        session_id = unsign_session_id(signed)
+        if session_id:
+            delete_session(session_id)
+    resp = RedirectResponse(url="/login", status_code=302)
+    resp.delete_cookie("session", path="/")
+    return resp
+
+
 async def _optional_user(request: Request) -> User | None:
     signed = request.cookies.get("session")
     if not signed:
         return None
     session_id = unsign_session_id(signed)
     if not session_id:
-        return None
+        raise LoginRequired()
     session = get_session(session_id)
-    if not session or not session.access_token:
-        return None
-    try:
-        return await verify_token(session.access_token)
-    except HTTPException:
-        return None
+    if not session:
+        raise LoginRequired()
+    return await get_user_from_session(session)
 
 
 @app.get("/")
@@ -101,14 +111,8 @@ async def onboarding_role(
         session_id = unsign_session_id(signed)
         if session_id:
             session = get_session(session_id)
-            if session and session.refresh_token:
-                tokens = await refresh_access_token(session.refresh_token)
-                session.access_token = tokens.get("access_token")
-                if tokens.get("refresh_token"):
-                    session.refresh_token = tokens.get("refresh_token")
-                if tokens.get("id_token"):
-                    session.id_token = tokens.get("id_token")
-                session.token_type = tokens.get("token_type")
+            if session:
+                await refresh_session_tokens(session)
 
     return RedirectResponse(url="/", status_code=302)
 

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Onboarding · Keycloak Auth Server{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>Choose your persona</h1>
+  <p>Are you a buyer or a seller? This choice is saved to your account and only asked once.</p>
+  <form class="onboarding-actions" method="post" action="/onboarding/role">
+    <button class="btn btn-buyer" type="submit" name="role" value="buyer">I am a buyer</button>
+    <button class="btn btn-seller" type="submit" name="role" value="seller">I am a seller</button>
+  </form>
+</div>
+{% endblock %}

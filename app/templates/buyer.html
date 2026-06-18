@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %}Buyer area · Keycloak Auth Server{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>Buyer dashboard</h1>
+  <p>Welcome, <strong>{{ user.username }}</strong>. This page is only available to users with the <code>buyer</code> role.</p>
+</div>
+{% endblock %}

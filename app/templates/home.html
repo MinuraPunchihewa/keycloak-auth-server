@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Home · Keycloak Auth Server{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>Welcome</h1>
+  {% if user %}
+    <p>Signed in as <strong>{{ user.username }}</strong>.</p>
+    {% if user.roles %}
+      <p>Your roles:</p>
+      <ul class="role-list">
+        {% for role in user.roles|sort %}
+          <li>{{ role }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No roles assigned yet.</p>
+    {% endif %}
+  {% else %}
+    <p class="muted">You are not signed in.</p>
+    <p><a class="btn btn-buyer" href="/login">Login with Keycloak</a></p>
+  {% endif %}
+</div>
+{% endblock %}

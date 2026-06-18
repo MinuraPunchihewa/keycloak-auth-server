@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Protected · Keycloak Auth Server{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>Protected area</h1>
+  <p>Hello, <strong>{{ user.username }}</strong>! Your Keycloak user id is <code>{{ user.id }}</code>.</p>
+  {% if user.roles %}
+    <p>Your roles:</p>
+    <ul class="role-list">
+      {% for role in user.roles|sort %}
+        <li>{{ role }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</div>
+{% endblock %}

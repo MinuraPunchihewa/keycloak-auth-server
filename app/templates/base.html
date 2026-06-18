@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Keycloak Auth Server{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="/">Keycloak Auth Server</a>
+      <nav class="nav">
+        <a href="/">Home</a>
+        {% if user %}
+          <a href="/protected">Protected</a>
+          {% if "buyer" in user.roles %}
+            <a href="/buyer">Buyer area</a>
+          {% endif %}
+          {% if "seller" in user.roles %}
+            <a href="/seller">Seller area</a>
+          {% endif %}
+          <a href="/logout">Logout</a>
+        {% else %}
+          <a href="/login">Login</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

@@ -12,7 +12,7 @@ This project uses the **authorization code flow with PKCE**, which is the recomm
 
 | Role | In this project |
 |------|-----------------|
-| **Resource owner** | The person signing in (e.g. `alice`) |
+| **Resource owner** | The person signing in (register or use an existing account) |
 | **Client** | The FastAPI app (`fastapi-server`) |
 | **Authorization server** | Keycloak (issues tokens after login) |
 | **Resource server** | The FastAPI app again (validates tokens on `/protected`) |
@@ -23,7 +23,7 @@ This project uses the **authorization code flow with PKCE**, which is the recomm
 
 2. **Redirect to Keycloak** — The app redirects the browser to Keycloak's authorization endpoint with parameters such as `client_id`, `redirect_uri`, `scope`, `state`, and `code_challenge` (a hash of the verifier). The user never sees the PKCE verifier; only the challenge is sent in the URL.
 
-3. **User authenticates** — Keycloak shows a login page. The user enters credentials (e.g. `alice` / `alice`). Keycloak validates them; the app never receives the password.
+3. **User authenticates** — Keycloak shows a login page. The user enters credentials or uses Google sign-in. Keycloak validates them; the app never receives the password.
 
 4. **Authorization grant** — If login succeeds, Keycloak redirects the browser back to `/auth/callback` with a short-lived **authorization code** and the same `state` value.
 
@@ -33,7 +33,9 @@ This project uses the **authorization code flow with PKCE**, which is the recomm
 
 7. **Store tokens** — The app saves the **access token**, **refresh token**, and **ID token** in the server-side session and sets a signed `session` cookie on the browser. The tokens themselves stay on the server; the cookie is only an opaque session reference.
 
-8. **Redirect home** — The browser is sent to `/`. The user is now logged in.
+8. **Onboarding (first login only)** — If the user has neither the `buyer` nor `seller` realm role, the app redirects to `/onboarding`. The user picks a persona; the backend assigns the role via the Keycloak Admin API and refreshes the session token so roles appear immediately.
+
+9. **Redirect home** — The browser is sent to `/`. The user is now logged in (and onboarded if this was their first visit).
 
 ### Accessing a protected resource (step by step)
 
@@ -62,12 +64,13 @@ PKCE (*Proof Key for Code Exchange*) protects public clients that cannot keep a 
 ## What it does
 
 - **Login via Keycloak** — `/login` redirects the browser to Keycloak, then `/auth/callback` exchanges the authorization code for tokens.
+- **Buyer / seller onboarding** — New users without a persona role are prompted once at `/onboarding` to choose buyer or seller. The choice is stored as a Keycloak realm role.
 - **Session cookies** — After login, a signed `session` cookie identifies the user. Tokens are kept in an in-memory session store (suitable for local development only).
-- **Protected routes** — `/protected` requires authentication and returns the logged-in username.
+- **Protected routes** — `/protected` requires authentication and onboarding. `/buyer` and `/seller` require the matching persona role.
 - **Bearer token support** — Protected routes also accept a JWT in the `Authorization: Bearer` header.
 - **Logout** — `/logout` clears the local session and redirects to Keycloak's end-session endpoint.
 
-The `dev` realm, OAuth client, and a demo user are imported automatically when Keycloak starts via `keycloak/import/dev-realm.json`.
+The `dev` realm, OAuth clients, realm roles, and admin service account are imported automatically when Keycloak starts via `keycloak/import/dev-realm.json`.
 
 Self registration has also been enabled, therefore, it is possible to click the Register button on the login page and create new users.
 
@@ -93,56 +96,35 @@ docker compose up --build
 
 3. Try the flow:
    - Open http://localhost:8000/login — you will be redirected to Keycloak.
-   - Sign in with the demo user (see below).
-   - Visit http://localhost:8000/protected — you should see a greeting with your username.
+   - **Register** a new account (or sign in if you already have one).
+   - After login, choose **Buyer** or **Seller** on the onboarding page.
+   - Visit http://localhost:8000/ — you should see your username and assigned role.
+   - Visit http://localhost:8000/protected — any onboarded user can access this page.
+   - Visit http://localhost:8000/buyer or http://localhost:8000/seller — only users with the matching role can access each page.
    - Visit http://localhost:8000/logout to sign out.
 
-### Demo user
+### Buyer / seller onboarding
 
-The demo user is not created by the FastAPI app. It is defined in `keycloak/import/dev-realm.json` and provisioned by Keycloak on startup.
+After a user registers or logs in for the first time, if they have neither the `buyer` nor `seller` realm role, the app shows a one-time onboarding page. When they choose a persona:
 
-When you run `docker compose up`, the Keycloak service:
+1. The FastAPI backend obtains a service-account token from the `fastapi-admin` Keycloak client.
+2. It assigns the chosen realm role to the user via the Keycloak Admin API.
+3. It refreshes the user's session access token so `buyer` or `seller` appears in JWT claims immediately.
+4. The user is redirected home and is not prompted again.
 
-1. Starts with `--import-realm`, which tells Keycloak to import JSON realm files from `/opt/keycloak/data/import`.
-2. Mounts `./keycloak/import` into that directory (see `docker-compose.yml`).
-3. Reads `dev-realm.json`, which creates the `dev` realm, the `fastapi-server` OAuth client, and the `alice` user in one step.
+Realm roles are defined in `keycloak/import/dev-realm.json`:
 
-The user entry in the realm file looks like this:
+- `buyer` — buyer persona
+- `seller` — seller persona
 
-```json
-{
-  "username": "alice",
-  "enabled": true,
-  "emailVerified": true,
-  "firstName": "Alice",
-  "lastName": "Demo",
-  "email": "alice@example.com",
-  "credentials": [
-    {
-      "type": "password",
-      "value": "alice",
-      "temporary": false
-    }
-  ]
-}
-```
+The `fastapi-admin` client is a confidential service account used only by the backend (not for browser login). It is granted `view-users`, `query-users`, `manage-users`, and `view-realm` on the `realm-management` client so the app can look up users, read realm roles, and assign them.
 
-Because `temporary` is `false`, no password change is required on first login. The realm also sets `loginWithEmailAllowed: true`, so you can sign in with either the username or email address.
-
-Import runs on first startup when the realm does not already exist. If you change `dev-realm.json` after Keycloak has created the realm, delete the `keycloak_data` Docker volume and restart so Keycloak re-imports:
+If you change realm roles or the admin client in `dev-realm.json`, re-import the realm:
 
 ```bash
 docker compose down -v
 docker compose up --build
 ```
-
-To add or change users without editing the JSON file, use the Keycloak admin console (see below) under **Users** in the `dev` realm.
-
-| Field    | Value               |
-|----------|---------------------|
-| Username | `alice`             |
-| Password | `alice`             |
-| Email    | `alice@example.com` |
 
 ### Keycloak admin console
 
@@ -215,17 +197,21 @@ pip install -r requirements.txt
 uvicorn app.server:app --reload --host 0.0.0.0 --port 8000
 ```
 
-4. Open http://localhost:8000/login and sign in with the demo user.
+4. Open http://localhost:8000/login, register or sign in, and complete onboarding.
 
 ## API endpoints
 
-| Method | Path             | Description                                      |
-|--------|------------------|--------------------------------------------------|
-| GET    | `/`              | Public hello endpoint                            |
-| GET    | `/login`         | Start OAuth login (redirects to Keycloak)        |
-| GET    | `/auth/callback` | OAuth callback (handled by Keycloak redirect)    |
-| GET    | `/logout`        | Clear session and log out via Keycloak           |
-| GET    | `/protected`     | Requires authentication (cookie or Bearer token) |
+| Method | Path                 | Description                                      |
+|--------|----------------------|--------------------------------------------------|
+| GET    | `/`                  | Home page (shows user info when logged in)       |
+| GET    | `/login`             | Start OAuth login (redirects to Keycloak)        |
+| GET    | `/auth/callback`     | OAuth callback (handled by Keycloak redirect)    |
+| GET    | `/logout`            | Clear session and log out via Keycloak           |
+| GET    | `/onboarding`        | One-time buyer/seller choice (auth required)     |
+| POST   | `/onboarding/role`   | Assign persona role and refresh session token    |
+| GET    | `/protected`         | Requires auth and onboarding (any persona)       |
+| GET    | `/buyer`             | Requires `buyer` role                            |
+| GET    | `/seller`            | Requires `seller` role                           |
 
 ## Saving Resources
 
@@ -244,6 +230,8 @@ Settings are loaded from environment variables and an optional `.env` file. Nest
 | `KEYCLOAK__REALM`                | `dev`                            | Keycloak realm name |
 | `KEYCLOAK__CLIENT_ID`            | `fastapi-server`                 | OAuth client ID |
 | `KEYCLOAK__CLIENT_SECRET`        | (empty)                          | Client secret (not required for the public client) |
+| `KEYCLOAK__ADMIN_CLIENT_ID`      | `fastapi-admin`                  | Service account client for Admin API role assignment |
+| `KEYCLOAK__ADMIN_CLIENT_SECRET`  | `dev-admin-secret-change-me`     | Secret for the admin service account client |
 | `KEYCLOAK__REDIRECT_URI`         | `http://localhost:8000/auth/callback` | OAuth redirect URI |
 | `KEYCLOAK__POST_LOGOUT_REDIRECT_URI` | `http://localhost:8000/`     | URL after Keycloak logout |
 | `KEYCLOAK__SCOPE`                | `openid profile email`           | OAuth scopes |
@@ -256,14 +244,18 @@ When running with Docker Compose, `KEYCLOAK__URL` is set to `http://keycloak:808
 
 ```
 app/
-  server.py          # FastAPI routes (login, callback, logout, protected)
+  server.py          # FastAPI routes, templates, onboarding
   settings.py        # Environment-based configuration
+  templates/         # Jinja2 HTML templates
+  static/            # Shared CSS
   auth/
     keycloak.py      # PKCE, token exchange, JWT verification
+    keycloak_admin.py # Keycloak Admin API (role assignment, token refresh)
+    onboarding.py    # Buyer/seller persona helpers
     session.py       # In-memory session store and signed cookies
-    deps.py          # FastAPI dependencies (get_current_user, require_role)
+    deps.py          # FastAPI dependencies (auth, onboarding, roles)
 keycloak/import/
-  dev-realm.json     # Realm, client, demo user, Mailpit SMTP, Google IdP (optional)
+  dev-realm.json     # Realm, clients, roles, Mailpit SMTP, Google IdP (optional)
 docker-compose.yml   # Keycloak, Mailpit, and app services
 Dockerfile           # FastAPI app image
 ```

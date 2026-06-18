@@ -1,7 +1,9 @@
 {
   "realm": "dev",
   "enabled": true,
-  "displayName": "Dev Realm",
+  "displayName": "Keycloak Auth Server",
+  "displayNameHtml": "Keycloak Auth Server",
+  "loginTheme": "app-theme",
   "registrationAllowed": true,
   "verifyEmail": true,
   "loginWithEmailAllowed": true,
@@ -9,6 +11,18 @@
   "resetPasswordAllowed": true,
   "editUsernameAllowed": false,
   "sslRequired": "external",
+  "roles": {
+    "realm": [
+      {
+        "name": "buyer",
+        "description": "Buyer persona"
+      },
+      {
+        "name": "seller",
+        "description": "Seller persona"
+      }
+    ]
+  },
   "smtpServer": {
     "host": "mailpit",
     "port": "1025",
@@ -53,23 +67,34 @@
       "webOrigins": [
         "http://localhost:8000"
       ]
+    },
+    {
+      "clientId": "fastapi-admin",
+      "name": "FastAPI Admin Service",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-admin-secret-change-me",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "fullScopeAllowed": true
     }
   ],
   "users": [
     {
-      "username": "alice",
+      "username": "service-account-fastapi-admin",
       "enabled": true,
-      "emailVerified": true,
-      "firstName": "Alice",
-      "lastName": "Demo",
-      "email": "alice@example.com",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "alice",
-          "temporary": false
-        }
-      ]
+      "serviceAccountClientId": "fastapi-admin",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users"
+        ]
+      }
     }
   ]
 }

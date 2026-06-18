@@ -3,7 +3,6 @@
   "enabled": true,
   "displayName": "Keycloak Auth Server",
   "displayNameHtml": "Keycloak Auth Server",
-  "loginTheme": "app-theme",
   "registrationAllowed": true,
   "verifyEmail": true,
   "loginWithEmailAllowed": true,

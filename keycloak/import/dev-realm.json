@@ -91,7 +91,8 @@
         "realm-management": [
           "manage-users",
           "view-users",
-          "query-users"
+          "query-users",
+          "view-realm"
         ]
       }
     }

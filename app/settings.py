@@ -19,6 +19,8 @@ class KeycloakSettings(Settings):
     realm: str = Field(default="dev")
     client_id: str = Field(default="fastapi-server")
     client_secret: str | None = Field(default=None)
+    admin_client_id: str = Field(default="fastapi-admin")
+    admin_client_secret: str = Field(default="dev-admin-secret-change-me")
 
     redirect_uri: str = Field(default="http://localhost:8000/auth/callback")
     post_logout_redirect_uri: str = Field(default="http://localhost:8000/")

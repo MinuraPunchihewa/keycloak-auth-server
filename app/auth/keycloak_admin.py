@@ -78,7 +78,7 @@ async def refresh_access_token(refresh_token: str) -> dict[str, Any]:
         data["client_secret"] = settings.keycloak.client_secret
 
     async with AsyncClient() as client:
-        resp = await client.post(settings.keycloak.token_url, data=data)
+        resp = await client.post(settings.keycloak.user_token_url, data=data)
         if resp.status_code >= 400:
             raise HTTPException(status_code=401, detail={"token_refresh_failed": resp.text})
         return resp.json()

@@ -39,6 +39,13 @@ class KeycloakSettings(Settings):
 
     @computed_field
     @property
+    def user_token_url(self) -> str:
+        # Must match the issuer in user-issued tokens (browser login uses public_url).
+        base = self.public_url or self.url
+        return f"{base}/realms/{self.realm}/protocol/openid-connect/token"
+
+    @computed_field
+    @property
     def end_session_url(self) -> str:
         base = self.public_url or self.url
         return f"{base}/realms/{self.realm}/protocol/openid-connect/logout"

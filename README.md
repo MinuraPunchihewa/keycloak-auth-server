@@ -1,6 +1,6 @@
 # Keycloak Auth Server
 
-A FastAPI application that demonstrates OpenID Connect authentication with [Keycloak](https://www.keycloak.org/). It implements the authorization code flow with PKCE, stores tokens in a server-side session, and protects routes by validating JWT access tokens against Keycloak's JWKS endpoint.
+A FastAPI application that demonstrates OpenID Connect authentication with [Keycloak](https://www.keycloak.org/). It implements the authorization code flow with PKCE, stores tokens in a server-side session, and protects routes by validating JWT access tokens via the [`python-keycloak`](https://python-keycloak.readthedocs.io/) library.
 
 ## How OAuth works
 
@@ -43,7 +43,7 @@ This project uses the **authorization code flow with PKCE**, which is the recomm
 
 2. **Resolve the session** — The app reads the cookie, looks up the stored access token, and validates it.
 
-3. **Validate the JWT** — The app fetches Keycloak's public keys (JWKS), verifies the access token's signature, issuer, and expiry, and reads claims such as `preferred_username` and roles.
+3. **Validate the JWT** — The app uses `python-keycloak`'s `decode_token()` to fetch Keycloak's JWKS, verify the access token's signature, issuer, and expiry, and read claims such as `preferred_username` and roles.
 
 4. **Return the response** — If the token is valid, the route handler runs and returns data for that user. If not, the app responds with `401 Unauthorized`.
 
@@ -249,8 +249,10 @@ app/
   templates/         # Jinja2 HTML templates
   static/            # Shared CSS
   auth/
-    keycloak.py      # PKCE, token exchange, JWT verification
-    keycloak_admin.py # Keycloak Admin API (role assignment, token refresh)
+    clients/
+      keycloak.py    # Cached python-keycloak OpenID + Admin clients
+    keycloak.py      # PKCE, token exchange, JWT verification (via python-keycloak)
+    keycloak_admin.py # Role assignment and token refresh (via python-keycloak)
     onboarding.py    # Buyer/seller persona helpers
     session.py       # In-memory session store and signed cookies
     deps.py          # FastAPI dependencies (auth, onboarding, roles)

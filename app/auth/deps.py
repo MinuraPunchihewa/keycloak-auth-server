@@ -1,8 +1,8 @@
-from fastapi import Depends, HTTPException, Request
-from jose.exceptions import ExpiredSignatureError
 from typing import Callable
 
-from app.auth.keycloak import keycloak_oauth2_scheme, User, verify_token
+from fastapi import Depends, HTTPException, Request
+
+from app.auth.keycloak import User, keycloak_oauth2_scheme, verify_token
 from app.auth.onboarding import has_persona
 from app.auth.session import get_session, unsign_session_id
 from app.auth.session_tokens import LoginRequired, get_user_from_session
@@ -12,10 +12,7 @@ async def get_current_user(
     request: Request, token: str | None = Depends(keycloak_oauth2_scheme)
 ) -> User:
     if token:
-        try:
-            return await verify_token(token)
-        except ExpiredSignatureError:
-            raise HTTPException(status_code=401, detail="Token expired")
+        return await verify_token(token)
 
     signed = request.cookies.get("session")
     if not signed:

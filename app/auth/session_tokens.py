@@ -1,7 +1,6 @@
 from typing import Any
 
 from fastapi import HTTPException
-from jose.exceptions import ExpiredSignatureError
 
 from app.auth.keycloak import User, verify_token
 from app.auth.keycloak_admin import refresh_access_token
@@ -38,6 +37,8 @@ async def get_user_from_session(session: SessionData) -> User:
         raise LoginRequired()
     try:
         return await verify_token(session.access_token)
-    except ExpiredSignatureError:
+    except HTTPException as exc:
+        if exc.status_code != 401:
+            raise
         await refresh_session_tokens(session)
         return await verify_token(session.access_token)
